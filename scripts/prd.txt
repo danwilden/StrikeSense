@@ -1,0 +1,333 @@
+Muay Thai App — Product Requirements Document (PRD)
+Version: 1.0
+Date: 2025-09-16
+Owner: Daniel / GPT-5 Thinking
+Status: Draft for Build
+
+\============================================================
+
+1. PRODUCT OVERVIEW
+   \============================================================
+   Goal: Deliver a mobile-first Muay Thai training companion that provides real-time form feedback (on-device), structured drills and programs, expert technique videos, and timers—monetized via subscription.
+
+Primary Differentiator: Accurate, interpretable, real-time guidance during single strikes and shadowboxing with progressive, themed training plans.
+
+Platforms: iOS and Android (Flutter).
+
+Business Model: Free + Pro subscription (monthly/annual with trial).
+
+\============================================================
+2\. OBJECTIVES & SUCCESS METRICS
+================================
+
+O1. Deliver core value within 2 sessions: Single Strike Review + Training Timer.
+KPM: 60% of new users complete 2 sessions in first 7 days (D7 activation).
+O2. Prove ongoing value through structured content (Drill Repo, Workout Builder, WOD).
+KPM: 35% of week-2 actives start a WOD program; 50% complete week 1.
+O3. Monetize with clean entitlements and high QoE video.
+KPM: 5–8% free→paid conversion by week 4; subscription churn <6% monthly.
+O4. Maintain performance & reliability.
+KPM: Crash-free sessions ≥99.5%; on-device inference ≥30 FPS on target devices.
+
+\============================================================
+3\. SCOPE
+=========
+
+In Scope (v1–v2):
+
+* Single Strike Review (SSR): punches, kicks, knees, elbows (initial set: jab, cross, rear round kick, teep, knee, horizontal elbow).
+* Shadow Coaching (SC): real-time monitoring during shadowboxing (guard/protection + common faults).
+* Training Timer (TT): round/interval/tabata timers; audio/haptics; background safe.
+* Drill Repository (DR): searchable library of bag/shadow drills.
+* Workout Builder (WB): goal + time → composed session plan using DR.
+* WOD 6-Week Program (WOD): themed weekly blocks; daily drills and progression.
+* Expert Technique Videos (ETV): pro clips; streaming + optional offline cache; entitlement gated.
+* Subscriptions: RevenueCat integration; soft→hard paywall rollout.
+* Privacy, consent, local-first analytics with optional upload.
+
+Out of Scope (v1): Wearables integration, live coach marketplace, multi-angle capture, web app, complex social features.
+
+\============================================================
+4\. PERSONAS
+============
+
+P1. Solo Practitioner (Beginner–Intermediate): wants clear cues, simple programs, minimal setup.
+P2. Gym Member (Intermediate): needs structure (WOD), timers, and technical refinement.
+P3. Coach/Content Creator: uploads/curates drills and technique videos (internal tool v0).
+
+\============================================================
+5\. USER STORIES (SELECTED)
+===========================
+
+SSR-US1: As a user, I can select “Rear Round Kick Review” and receive real-time cues with a per-rep score.
+SSR-US2: As a southpaw, I can auto-detect or set stance so checks apply correctly.
+SC-US1: As a user, I get notified only when guard is down for >500 ms to avoid nagging.
+TT-US1: As a user, my timer keeps running when the screen is off and plays round/break cues.
+DR-US1: As a user, I can search for bag-only beginner drills focused on rotation.
+WB-US1: As a user, I choose “Rotation Focus, 30 minutes, bag” and get a composed session.
+WOD-US1: As a user, I join a 6-week program themed by week and track adherence.
+ETV-US1: As a Pro user, I can download up to N videos for offline playback.
+
+\============================================================
+6\. FUNCTIONAL REQUIREMENTS
+===========================
+
+IDs use a prefix per module for traceability.
+
+---
+
+## 6.1 Single Strike Review (SSR)
+
+SSR-1: Support techniques: jab, cross, rear round kick, teep, knee, horizontal elbow (v1).
+SSR-2: On-device pose estimation (MoveNet/BlazePose) with ≥30 FPS on target devices.
+SSR-3: Smoothing (One-Euro) and per-frame confidence gating for landmarks.
+SSR-4: Strike segmentation via FSM or small temporal window (2–3s) to delineate phases.
+SSR-5: Checks (interpretable v1):
+
+* SSR-5.1 Guard height: non-striking hand above jawline during strike+recovery window.
+* SSR-5.2 Elbow flare & alignment for straight punches (shoulder–elbow–wrist angle near 180° at extension).
+* SSR-5.3 Hip/shoulder rotation delta exceeds threshold (cross, round kick).
+* SSR-5.4 Kick chamber ≥ hip height; support foot pivot angle 90–180°.
+* SSR-5.5 Return-to-guard within 500–800 ms.
+  SSR-6: Prompt debouncing (0.5–1.0 s window) to reduce false positives.
+  SSR-7: Scoring rubric per rep: Guard | Rotation | Balance | Recovery (0–100).
+  SSR-8: Overlay HUD: simple skeleton, minimal text prompts, color-coded cues.
+  SSR-9: Southpaw/Orthodox detection with manual override.
+  SSR-10: Session summary: per-rep breakdown, averages, common faults.
+  SSR-11: Battery management: dynamic FPS, hands model only during punch phases (optional).
+  SSR-12: Privacy: process on-device; no camera frames uploaded by default.
+
+Acceptance Criteria:
+
+* AC-SSR-1: ≥90% correct strike segmentation on validation clips.
+* AC-SSR-2: False prompt rate <10% on pilot sessions; prompts are not repeated within 2s for same fault.
+* AC-SSR-3: Performance ≥30 FPS on mid-tier Android (test matrix defined).
+
+---
+
+## 6.2 Shadow Coaching (SC)
+
+SC-1: Continuous monitoring during shadowboxing (no bag).
+SC-2: Guard/protection metric: “time below guard” per round; prompt at >500 ms below jawline.
+SC-3: Technique flaw detection using heuristics from SSR in rolling windows.
+SC-4: Stance detection and switching mid-session supported.
+SC-5: Balance & trunk lean bounds; COM approximation remains within base of support.
+SC-6: Prompt cooldown per type (min 3s) to prevent spam.
+SC-7: Session summary: fault counts, total guard-down time, top 3 improvement cues; optional local short clips (5–10s) saved for review.
+SC-8: Offline-first; upload summaries only with consent.
+Acceptance Criteria:
+
+* AC-SC-1: Users report ≤1 prompt every 15s on average under normal technique; perceived relevance ≥4/5 in pilot survey.
+* AC-SC-2: Summary metrics consistent within ±10% on repeated sessions of similar effort.
+
+---
+
+## 6.3 Training Timer (TT)
+
+TT-1: Round, interval, tabata modes; configurable work/rest sets & warm-up/cool-down.
+TT-2: Background safe (screen-off), with local notifications and audio cues.
+TT-3: Metronome (BPM) and cadence cues.
+TT-4: Haptic patterns for start/stop/warnings.
+TT-5: Drift <250 ms per minute measured over 10-minute run.
+TT-6: Timer presets saved & recalled.
+Acceptance Criteria:
+
+* AC-TT-1: Timers continue through iOS Focus and Android Doze with audio cues.
+* AC-TT-2: Measured drift within spec across 10-minute continuous run.
+
+---
+
+## 6.4 Drill Repository (DR)
+
+DR-1: Drill schema: id, type (bag/shadow), level, theme tags, required modules, rounds/work/rest, components.
+DR-2: At least 30 seeded drills (15 bag, 15 shadow) for launch.
+DR-3: Browse, search, filter by type, level, theme, technique.
+DR-4: Favorites; offline toggle (download required media).
+DR-5: Drill runs via Timer + SSR or SC modules where specified.
+Acceptance Criteria:
+
+* AC-DR-1: Search returns relevant drills within 150 ms after index built.
+* AC-DR-2: 95% of drills runnable without schema errors.
+
+---
+
+## 6.5 Workout Builder (WB)
+
+WB-1: Inputs: focus (e.g., “Rotation”, “Guard”), environment (bag/shadow), time budget (20/30/45).
+WB-2: Composition rules: include warm-up/cool-down; alternate muscle groups; include SSR slots for target focus; avoid immediate repetition of same technique.
+WB-3: Output: runnable session plan referencing DR + TT + SSR/SC modules.
+WB-4: Variety: at least 6 unique compositions per focus/time combo.
+Acceptance Criteria:
+
+* AC-WB-1: Builder outputs a valid plan within 300 ms.
+* AC-WB-2: Perceived variety ≥4/5 over 2 weeks in pilot survey.
+
+---
+
+## 6.6 WOD 6-Week Program (WOD)
+
+WOD-1: Themed weeks: Close Quarter; Footwork & Angles; Long Game; Conditioning; Defense & Counters; Flow & Combinations.
+WOD-2: Daily auto-populated plan; progression/unlock rules (e.g., complete ≥3 sessions/week).
+WOD-3: Adherence tracking; streaks; gentle nudges via local notifications.
+WOD-4: Reroll option for missed days or limited equipment.
+Acceptance Criteria:
+
+* AC-WOD-1: 80% of beta users complete ≥3 sessions in week 1.
+* AC-WOD-2: Program integrity maintained when reroll is used (no duplicates next day).
+
+---
+
+## 6.7 Expert Technique Videos (ETV)
+
+ETV-1: Video backend pluggable: Mux (default v1) or AWS S3+CloudFront (configurable).
+ETV-2: Categories, stance, level metadata; search and filter.
+ETV-3: Offline cache with global limit (e.g., 1–2 GB or N videos).
+ETV-4: Entitlement gate via RevenueCat (“pro”).
+ETV-5: Admin upload (Coach Studio v0): metadata (title, tags, stance, level), publish toggle.
+ETV-6: Player: HLS adaptive streaming; captions; 15s skip; remember position.
+Acceptance Criteria:
+
+* AC-ETV-1: Playback starts <2s on 10 Mbps; <4s on 2 Mbps.
+* AC-ETV-2: Offline videos play in airplane mode; cache limit respected.
+
+---
+
+## 6.8 Subscriptions & Paywall (SUB)
+
+SUB-1: RevenueCat integration; monthly & annual plans; intro trial (7 days default).
+SUB-2: Soft paywall (fake paywall): paywall UI with tester bypass via remote config.
+SUB-3: Hard paywall activation controlled by feature flag per country/storefront.
+SUB-4: Restore purchases; sign-in is optional (anonymous id) but recommended for sync.
+SUB-5: Analytics funnel: impression, CTA tap, restore, purchase success, cancel.
+Acceptance Criteria:
+
+* AC-SUB-1: Purchase & restore verified in TestFlight/Play internal.
+* AC-SUB-2: Paywall gating enforced consistently across SSR limits, DR/ETV/WB/WOD.
+
+\============================================================
+7\. NON-FUNCTIONAL REQUIREMENTS
+===============================
+
+NFR-1 Performance: On-device inference ≥30 FPS; per-frame budget <33 ms.
+NFR-2 Reliability: Crash-free sessions ≥99.5%; ANR <0.2%.
+NFR-3 Privacy: Default local processing; uploads only with explicit consent; no raw frames stored server-side by default.
+NFR-4 Security: Signed URLs for media; TLS everywhere; secure storage for tokens.
+NFR-5 Accessibility: Voice cues; haptics; large-text support; color contrast.
+NFR-6 Internationalization (v2): Copy structured for localization.
+NFR-7 Offline: Core sessions run offline; video offline cache; deferred sync.
+NFR-8 Battery/Thermal: Monitor thermal state; throttle models when hot.
+
+\============================================================
+8\. SYSTEM & DATA
+=================
+
+8.1 Architecture
+
+* Flutter app with modules as in plan.
+* Backend AWS: API Gateway/AppSync + Lambda; DynamoDB; S3; optional Timestream; Remote Config service.
+* Video: Mux (preferred v1) or S3+CloudFront (flagged).
+* Model Ops (v2): SageMaker training; model registry; TFLite export.
+
+8.2 Data Model (high level)
+
+* UserProfile: id, stance, limb metrics, injuries, consent flags, entitlement tier.
+* Session: id, type (SSR/SC/WOD/etc.), device, env, start/end, aggregates.
+* Rep: session\_id, technique, timestamps, sub-scores {guard, rotation, balance, recovery}, faults\[].
+* Drill: id, type, theme tags, level, rounds/work/rest, components.
+* Program (WOD): id, week\_theme, day schedule, progression rules.
+* Video: id, url(s), metadata (stance, level, tags), size, published, offline\_state.
+
+\============================================================
+9\. TELEMETRY & ANALYTICS
+=========================
+
+Events (key subset):
+
+* app\_open, session\_start, session\_end
+* ssr\_start, ssr\_rep\_scored, ssr\_summary\_viewed
+* sc\_start, sc\_prompt\_emitted(type), sc\_summary\_viewed
+* timer\_start(type), timer\_complete
+* drill\_view, drill\_start, drill\_complete
+* wod\_join, wod\_day\_complete, wod\_week\_complete
+* etv\_view, etv\_download, etv\_delete, etv\_offline\_play
+* paywall\_impression(variant), paywall\_cta\_click, purchase\_success, restore\_success
+* crash, error(type)
+
+Dashboards:
+
+* Activation (D1/D7), retention, session length, drill popularity, prompt rate/min, WOD adherence, paywall funnel, conversion, churn.
+
+\============================================================
+10\. CONTENT OPERATIONS
+=======================
+
+CO-1: Coach Studio v0 (internal): upload video, set metadata, publish toggle.
+CO-2: Weekly content cadence: +4 drills, +4 videos minimum.
+CO-3: Review checklist: lighting, angle, captions, stance variants.
+CO-4: Templating: drills reference SSR/SC modules by id.
+
+\============================================================
+11\. PRIVACY, CONSENT, COMPLIANCE
+=================================
+
+PR-1: Explicit opt-in to upload summaries or short clips for improvement.
+PR-2: Health disclaimers in onboarding and settings.
+PR-3: GDPR/CCPA-ready export/delete (v2 backlog).
+
+\============================================================
+12\. REMOTE CONFIG & FEATURE FLAGS
+==================================
+
+RC-1: Flags: paywall\_enabled, hard\_gate\_enabled, tester\_bypass\_list, video\_backend (“mux”/“aws”), thresholds (“strict/normal/lenient”).
+RC-2: Rollout staged by cohort and platform; instant rollback supported.
+
+\============================================================
+13\. ACCEPTANCE CRITERIA (LAUNCH-LEVEL)
+=======================================
+
+A-1: All ACs per module (Section 6) met on device matrix.
+A-2: Crash-free ≥99.5% in 200-user beta.
+A-3: Paywall funnel events verified; purchases/restores work in sandbox.
+A-4: Video QoE meets targets; offline playback verified.
+A-5: Privacy/consent flows implemented; no uploads without consent.
+
+\============================================================
+14\. RISKS & MITIGATIONS
+========================
+
+R1: Pose errors in low light / occlusion → user guidance, confidence gating, smoothing.
+R2: Prompt spam → debouncing and cooldowns; per-type limits.
+R3: Timer background issues → explicit audio session and local notifications; platform QA.
+R4: Video costs/QoE → Mux default; AWS fallback via flag.
+R5: App review delays → clear paywall behavior; TestFlight/Play internal testing first.
+
+\============================================================
+15\. OPEN QUESTIONS
+===================
+
+Q1: Initial pricing (monthly/annual) and trial length?
+Q2: Offline cache size limit for videos (GB vs count)?
+Q3: Daily WOD content mixing rules (variety vs specificity)?
+Q4: Injury accommodations per user (how much personalization v1)?
+
+\============================================================
+16\. MILESTONES (REFERENCE)
+===========================
+
+M0 Readiness; M1 Timer; M2 Single Strike; M3 Drill Repo; M4 Shadow Coaching; M5 Workout Builder; M6 WOD; M7 Expert Videos; M8 Subscriptions; M9 Beta & Privacy.
+
+\============================================================
+17\. GLOSSARY
+=============
+
+SSR: Single Strike Review
+SC: Shadow Coaching
+TT: Training Timer
+DR: Drill Repository
+WB: Workout Builder
+WOD: 6-Week Program
+ETV: Expert Technique Videos
+SUB: Subscriptions
+NFR: Non-Functional Requirement
+KPM: Key Performance Metric
+RC: Remote Config
