@@ -70,6 +70,80 @@ class TimerConfig extends Equatable {
     return workTime + restTime;
   }
 
+  /// Convert to JSON for storage
+  Map<String, dynamic> toJson() {
+    return {
+      'mode': mode.name,
+      'rounds': rounds,
+      'workDuration': workDuration.inMilliseconds,
+      'restDuration': restDuration.inMilliseconds,
+      'warningDuration': warningDuration.inMilliseconds,
+      'enableSound': enableSound,
+      'enableHaptics': enableHaptics,
+      'volume': volume,
+    };
+  }
+
+  /// Create from JSON
+  factory TimerConfig.fromJson(Map<String, dynamic> json) {
+    return TimerConfig(
+      mode: TimerMode.values.firstWhere(
+        (e) => e.name == json['mode'],
+        orElse: () => TimerMode.round,
+      ),
+      rounds: json['rounds'] as int,
+      workDuration: Duration(milliseconds: json['workDuration'] as int),
+      restDuration: Duration(milliseconds: json['restDuration'] as int),
+      warningDuration: Duration(milliseconds: json['warningDuration'] as int),
+      enableSound: json['enableSound'] as bool? ?? true,
+      enableHaptics: json['enableHaptics'] as bool? ?? true,
+      volume: (json['volume'] as num?)?.toDouble() ?? 0.8,
+    );
+  }
+
+  /// Validate the timer configuration
+  bool isValid() {
+    try {
+      // Check basic constraints
+      if (rounds < 1 || rounds > 100) return false;
+      if (workDuration.inSeconds < 1 || workDuration.inSeconds > 3600)
+        return false;
+      if (restDuration.inSeconds < 0 || restDuration.inSeconds > 3600)
+        return false;
+      if (warningDuration.inSeconds < 0 || warningDuration.inSeconds > 60)
+        return false;
+      if (volume < 0.0 || volume > 1.0) return false;
+
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Get validation errors
+  List<String> getValidationErrors() {
+    final errors = <String>[];
+
+    if (rounds < 1) errors.add('Rounds must be at least 1');
+    if (rounds > 100) errors.add('Rounds cannot exceed 100');
+    if (workDuration.inSeconds < 1)
+      errors.add('Work duration must be at least 1 second');
+    if (workDuration.inSeconds > 3600)
+      errors.add('Work duration cannot exceed 1 hour');
+    if (restDuration.inSeconds < 0)
+      errors.add('Rest duration cannot be negative');
+    if (restDuration.inSeconds > 3600)
+      errors.add('Rest duration cannot exceed 1 hour');
+    if (warningDuration.inSeconds < 0)
+      errors.add('Warning duration cannot be negative');
+    if (warningDuration.inSeconds > 60)
+      errors.add('Warning duration cannot exceed 60 seconds');
+    if (volume < 0.0) errors.add('Volume cannot be negative');
+    if (volume > 1.0) errors.add('Volume cannot exceed 1.0');
+
+    return errors;
+  }
+
   @override
   List<Object?> get props => [
     mode,
