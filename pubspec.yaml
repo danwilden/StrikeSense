@@ -46,6 +46,15 @@ dependencies:
   flutter_bloc: ^8.1.6
   equatable: ^2.0.5
 
+  # Pose estimation dependencies - ML Kit Pose Detection
+  google_mlkit_pose_detection: ^0.10.0
+  image: ^4.1.7
+
+  # Camera dependencies
+  camera: ^0.10.5+9
+  permission_handler: ^11.3.1
+  path_provider: ^2.1.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

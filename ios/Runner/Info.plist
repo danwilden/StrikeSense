@@ -55,5 +55,9 @@
 	<array>
 		<string>com.strikesense.timer.refresh</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>This app needs camera access for pose estimation and boxing training features.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>This app needs microphone access for audio cues during training.</string>
 </dict>
 </plist>
